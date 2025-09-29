@@ -1,0 +1,222 @@
+# CCHFV segmented analysis pipeline
+
+import yaml, os, json
+cfg = yaml.safe_load(open("config/config.yaml"))
+
+SAMPLES = [x.get("sample","CCHF_2022_ISB_01") for x in cfg.get("pairs", [{"sample":"CCHF_2022_ISB_01","r1":"data-private/CCHF_2022_ISB_01_R1.fastq.gz","r2":"data-private/CCHF_2022_ISB_01_R2.fastq.gz"}])]
+META = {x.get("sample","CCHF_2022_ISB_01"): x for x in cfg.get("pairs", [])}
+if not META:
+    META = {"CCHF_2022_ISB_01": {"r1":"data-private/CCHF_2022_ISB_01_R1.fastq.gz","r2":"data-private/CCHF_2022_ISB_01_R2.fastq.gz"}}
+
+THREADS = 4
+MINLEN =   cfg.get("discovery",{}).get("min_len_contig", 300)
+BLAST_REMOTE = cfg.get("discovery",{}).get("blast_remote", True)
+BLAST_DB = cfg.get("discovery",{}).get("blast_db", "nt")
+TOP_HITS = cfg.get("discovery",{}).get("top_hits", 25)
+BOOT =     cfg.get("phylogeny",{}).get("bootstrap", 1000)
+MF =       cfg.get("phylogeny",{}).get("use_model_finder", True)
+MIN_DP =   cfg.get("phylogeny",{}).get("min_depth_consensus", 10)
+CTX_HITS = cfg.get("context",{}).get("per_segment_hits", 25)
+
+rule all:
+    input:
+        expand("results/iqtree/{seg}.treefile", seg=["S","M","L"]),
+        expand("results/consensus/{s}.{seg}.fa", s=SAMPLES, seg=["S","M","L"]),
+        expand("results/reports/{s}_segment_report.txt", s=SAMPLES)
+
+rule fastqc:
+    input:
+        r1=lambda w: META[w.s]["r1"],
+        r2=lambda w: META[w.s]["r2"]
+    output:
+        "work/{s}.R1.fastqc.html",
+        "work/{s}.R2.fastqc.html"
+    shell:
+        "fastqc -o work {input.r1} {input.r2}"
+
+rule trim:
+    input:
+        r1=lambda w: META[w.s]["r1"],
+        r2=lambda w: META[w.s]["r2"]
+    output:
+        r1="work/{s}.R1.trim.fastq.gz",
+        r2="work/{s}.R2.trim.fastq.gz"
+    params:
+        adapters="env/TruSeq3-PE.fa"
+    threads: 4
+    shell:
+        "trimmomatic PE -threads {threads} {input.r1} {input.r2} "
+        "{output.r1} /dev/null {output.r2} /dev/null "
+        "ILLUMINACLIP:{params.adapters}:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50"
+
+rule spades:
+    input:
+        r1="work/{s}.R1.trim.fastq.gz",
+        r2="work/{s}.R2.trim.fastq.gz"
+    output:
+        contigs="results/spades/{s}/contigs.fasta"
+    threads: 4
+    shell:
+        "mkdir -p results/spades/{wildcards.s} && "
+        "spades.py -1 {input.r1} -2 {input.r2} -t {threads} -o results/spades/{wildcards.s} > logs/{wildcards.s}.spades.log 2>&1 && "
+        "test -f results/spades/{wildcards.s}/contigs.fasta || touch {output.contigs}"
+
+rule contig_qc:
+    input:
+        "results/spades/{s}/contigs.fasta"
+    output:
+        "results/spades/{s}/contigs.qc.tsv"
+    params:
+        minlen=MINLEN
+    shell:
+        "python analysis/scripts/contig_qc.py --in {input} --min_len {params.minlen} --out_tsv {output}"
+
+rule blast_top_hits:
+    input:
+        contigs="results/spades/{s}/contigs.fasta"
+    output:
+        "results/blast/{s}.contig_top_hits.tsv"
+    params:
+        remote="--remote" if BLAST_REMOTE else "",
+        db=BLAST_DB,
+        max_hits=TOP_HITS
+    shell:
+        "mkdir -p results/blast && "
+        "python analysis/scripts/blast_top_hits.py --contigs {input.contigs} --out_tsv {output} {params.remote} --db {params.db} --max_hits {params.max_hits}"
+
+rule classify_segments:
+    input:
+        blast="results/blast/{s}.contig_top_hits.tsv",
+        qc="results/spades/{s}/contigs.qc.tsv"
+    output:
+        tsv="results/segments/{s}_segment_calls.tsv",
+        js="results/segments/{s}_segment_calls.json"
+    shell:
+        "mkdir -p results/segments && python analysis/scripts/classify_segments.py --blast {input.blast} --contig_qc {input.qc} --out_tsv {output.tsv} --out_json {output.js}"
+
+def selected_acc(wildcards, seg):
+    import json
+    d = json.load(open(f"results/segments/{wildcards.s}_segment_calls.json"))
+    sel = d.get('rows', [])
+    for r in sel:
+        if r and r[0] == seg and r[1]:
+            return r[1]
+    return "NC_005300"  # harmless fallback
+
+rule fetch_ref_S:
+    input:
+        js="results/segments/{s}_segment_calls.json"
+    output:
+        "results/refs/{s}.S.fasta"
+    run:
+        acc = selected_acc(wildcards, "S")
+        shell("mkdir -p results/refs && python analysis/scripts/fetch_single.py --acc {acc} --out_fasta {output}")
+
+rule fetch_ref_M:
+    input:
+        js="results/segments/{s}_segment_calls.json"
+    output:
+        "results/refs/{s}.M.fasta"
+    run:
+        acc = selected_acc(wildcards, "M")
+        shell("mkdir -p results/refs && python analysis/scripts/fetch_single.py --acc {acc} --out_fasta {output}")
+
+rule fetch_ref_L:
+    input:
+        js="results/segments/{s}_segment_calls.json"
+    output:
+        "results/refs/{s}.L.fasta"
+    run:
+        acc = selected_acc(wildcards, "L")
+        shell("mkdir -p results/refs && python analysis/scripts/fetch_single.py --acc {acc} --out_fasta {output}")
+
+rule map_bwa_seg:
+    input:
+        r1="work/{s}.R1.trim.fastq.gz",
+        r2="work/{s}.R2.trim.fastq.gz",
+        ref="results/refs/{s}.{seg}.fasta"
+    output:
+        bam="work/{s}.{seg}.sorted.bam"
+    threads: 4
+    shell:
+        "bwa index {input.ref} && "
+        "bwa mem -t {threads} {input.ref} {input.r1} {input.r2} | samtools sort -@ {threads} -o {output.bam} && "
+        "samtools index {output.bam}"
+
+rule consensus_seg:
+    input:
+        bam="work/{s}.{seg}.sorted.bam",
+        ref="results/refs/{s}.{seg}.fasta"
+    output:
+        depth="results/coverage/{s}.{seg}.depth.txt",
+        mask="work/{s}.{seg}.mask.bed",
+        vcf="work/{s}.{seg}.vcf.gz",
+        cons="results/consensus/{s}.{seg}.fa"
+    params:
+        min_dp=MIN_DP
+    threads: 4
+    shell:
+        "mkdir -p results/coverage results/consensus && "
+        "samtools depth -a {input.bam} > {output.depth} && "
+        "awk -v OFS='\\t' -v MIN={params.min_dp} '{{ if ($3<MIN) print $1, $2-1, $2 }}' {output.depth} > {output.mask} && "
+        "bcftools mpileup -Ou -f {input.ref} {input.bam} | bcftools call -mv -Oz -o {output.vcf} && bcftools index {output.vcf} && "
+        "bcftools consensus -f {input.ref} -m {output.mask} {output.vcf} > {output.cons}"
+
+rule context_from_blast_S:
+    input:
+        blast="results/blast/{s}.contig_top_hits.tsv"
+    output:
+        "results/context/S_context.fasta"
+    params:
+        hits=CTX_HITS
+    shell:
+        "mkdir -p results/context && python analysis/scripts/build_context_from_blast.py --blast {input.blast} --segment S --hits {params.hits} --out_fasta {output}"
+
+rule context_from_blast_M:
+    input:
+        blast="results/blast/{s}.contig_top_hits.tsv"
+    output:
+        "results/context/M_context.fasta"
+    params:
+        hits=CTX_HITS
+    shell:
+        "mkdir -p results/context && python analysis/scripts/build_context_from_blast.py --blast {input.blast} --segment M --hits {params.hits} --out_fasta {output}"
+
+rule context_from_blast_L:
+    input:
+        blast="results/blast/{s}.contig_top_hits.tsv"
+    output:
+        "results/context/L_context.fasta"
+    params:
+        hits=CTX_HITS
+    shell:
+        "mkdir -p results/context && python analysis/scripts/build_context_from_blast.py --blast {input.blast} --segment L --hits {params.hits} --out_fasta {output}"
+
+rule align_seg:
+    input:
+        cons="results/consensus/{s}.{seg}.fa",
+        ctx="results/context/{seg}_context.fasta"
+    output:
+        "results/aln/{seg}_alignment.fasta"
+    shell:
+        "mkdir -p results/aln && cat {input.cons} {input.ctx} > results/aln/{wildcards.seg}_input.fasta && mafft --auto results/aln/{wildcards.seg}_input.fasta > {output}"
+
+rule iqtree_seg:
+    input:
+        aln="results/aln/{seg}_alignment.fasta"
+    output:
+        tree="results/iqtree/{seg}.treefile"
+    params:
+        mf=" -m MFP" if MF else "",
+        bb=BOOT
+    threads: 2
+    shell:
+        "mkdir -p results/iqtree && iqtree -s {input.aln} {params.mf} -bb {params.bb} -nt {threads} -pre results/iqtree/{wildcards.seg}"
+
+rule report_segments:
+    input:
+        js="results/segments/{s}_segment_calls.json"
+    output:
+        "results/reports/{s}_segment_report.txt"
+    shell:
+        "mkdir -p results/reports && python analysis/scripts/report_segments.py --segments_json {input.js} --out_txt {output}"

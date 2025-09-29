@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: Please cite this code and the associated paper.
+title: CCHFV segmented analysis pipeline for Pakistan 2022 study
+version: 1.0.0
+date-released: 2025-09-28
+authors:
+  - family-names: Haider
+    given-names: Syed Adnan
+preferred-citation:
+  type: article
+  title: Whole-genome sequencing of Crimean-Congo hemorrhagic fever virus circulating in Pakistan during 2022
+  authors:
+    - family-names: Umair
+      given-names: Massab
+    - family-names: Rehman
+      given-names: Zaira
+    - family-names: Haider
+      given-names: Syed A.
+    - family-names: Ali
+      given-names: Qasim
+    - family-names: Hakim
+      given-names: Rabia
+    - family-names: Bibi
+      given-names: Shaheen
+    - family-names: Salman
+      given-names: Muhammad
+    - family-names: Ikram
+      given-names: Aamer
+  year: 2023
+  journal: Journal of Medical Virology
+  doi: 10.1002/jmv.28604

@@ -1,0 +1,24 @@
+name: cchfv-seg-env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas
+  - numpy
+  - matplotlib
+  - biopython
+  - pyyaml
+  - snakemake
+  - fastqc=0.11.9
+  - trimmomatic=0.39
+  - spades=3.15.5
+  - blast
+  - bwa
+  - samtools
+  - bcftools
+  - mafft
+  - iqtree
+  - entrez-direct
+  - seqkit
