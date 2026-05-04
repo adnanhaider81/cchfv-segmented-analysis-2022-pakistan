@@ -6,6 +6,7 @@ Thanks for improving this analysis.
 - Do not commit patient data or restricted datasets.
 - Keep parameters in `config/config.yaml` for reproducibility.
 - Match tool versions in `env/environment.yml` where possible.
+- Use neutral sample names in examples, documentation, and public outputs.
 
 ## Workflow
 1. Fork and create a feature branch.
@@ -14,7 +15,7 @@ Thanks for improving this analysis.
    ```bash
    conda activate cchfv-seg-env
    export NCBI_EMAIL="your@email"
-   snakemake -s workflow/Snakefile -n -c 4
+   make dry
    ```
 4. Verify `make test` works.
 5. Open a PR describing your change and parameter updates.

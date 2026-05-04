@@ -1,6 +1,6 @@
 # Whole genome sequencing of Crimean Congo hemorrhagic fever virus circulating in Pakistan during 2022 - reproducible segmented analysis
 
-Reproducible pipeline that mirrors the study design and methods. It builds contigs, uses NCBI BLAST to identify the likely clade for each segment, then performs targeted reference based assembly per segment, and finally infers phylogeny for S, M, and L. It also flags potential reassortment if a sample segments into different clades.
+Reproducible pipeline that follows the study design and methods. It builds contigs, uses NCBI BLAST to identify the likely clade for each segment, performs targeted reference based assembly per segment, and infers phylogeny for S, M, and L. It also writes a reassortment status summary when segment clade calls differ.
 
 ## Program summary
 One Snakemake pipeline. Discovery first, then per segment targeted analysis.
@@ -39,7 +39,7 @@ One Snakemake pipeline. Discovery first, then per segment targeted analysis.
    - Write a compact report per segment that lists the nearest labeled sequences in the tree to support a clade interpretation.
 
 7) Reassortment flag
-   - If the provisional clade labels differ across S, M, and L, write a `reassortment_flag.txt` for that sample.
+   - If the provisional clade labels differ across S, M, and L, write a reassortment status file for that sample.
 
 ## Why this design
 CCHFV segments are known to fall into lineages that can differ across S, M, and L, and reassortment is documented. This pipeline follows the paper design for Pakistan 2022 and general best practice for segmented bunyaviruses.
@@ -64,13 +64,28 @@ export NCBI_EMAIL="you@example.com"
 snakemake -s workflow/Snakefile -c 4 --printshellcmds
 ```
 
+## Smoke test
+The repository includes a small synthetic FASTQ pair and count table so the basic Python scripts and configuration can be checked without private sequence data.
+
+```bash
+make test
+```
+
+To preview the workflow with the synthetic paths in `config/config.yaml`:
+
+```bash
+make dry
+```
+
+The dry run requires Snakemake to be installed. A full run also requires the external tools listed in `env/environment.yml` and valid sequencing data.
+
 ## Configuration
 Edit `config/config.yaml`. Minimal example:
 ```yaml
 pairs:
-  - sample: CCHF_2022_ISB_01
-    r1: data-private/CCHF_2022_ISB_01_R1.fastq.gz
-    r2: data-private/CCHF_2022_ISB_01_R2.fastq.gz
+  - sample: CCHFV_DEMO_01
+    r1: data-example/fastq/CCHFV_DEMO_01_R1.fastq
+    r2: data-example/fastq/CCHFV_DEMO_01_R2.fastq
 
 discovery:
   min_len_contig: 300
@@ -97,13 +112,18 @@ context:
 - `results/aln/S_alignment.fasta`, `M_alignment.fasta`, `L_alignment.fasta`
 - `results/iqtree/S.treefile`, `M.treefile`, `L.treefile`
 - `results/reports/<sample>_segment_report.txt`
-- `results/reports/<sample>_reassortment_flag.txt` present only if mixed clades
+- `results/reports/<sample>_reassortment_status.txt`
 
 ## Quick start
-1) Drop your FASTQs under `data-private/` and set them in `config/config.yaml`.
-2) Ensure you set `NCBI_EMAIL` in your shell.
-3) Run `make run` or the Snakemake command above.
-4) Inspect `results/reports/` and the per segment trees in `results/iqtree/`.
+1) Run `make test` to check the local Python environment.
+2) Put private FASTQs under `data-private/` or another local path ignored by git.
+3) Update `config/config.yaml` with anonymized sample names and FASTQ paths.
+4) Set `NCBI_EMAIL` in your shell.
+5) Run `make dry`, then `make run`.
+6) Inspect `results/reports/` and the per segment trees in `results/iqtree/`.
+
+## Data policy
+The repository includes only synthetic demo inputs. Do not commit patient data, restricted FASTQs, generated BAM/VCF files, or run outputs.
 
 ## References
 - Umair M, Rehman Z, Haider SA, et al. Whole genome sequencing of Crimean Congo hemorrhagic fever virus circulating in Pakistan during 2022. Journal of Medical Virology. 2023. doi:10.1002/jmv.28604

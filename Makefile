@@ -2,14 +2,16 @@ SHELL := /bin/bash
 
 ENV_NAME := cchfv-seg-env
 THREADS ?= 4
+PYTHON ?= python3
 
-.PHONY: env run dry test clean help
+.PHONY: env run dry test smoke clean help
 
 help:
 	@echo "make env   - create conda env"
 	@echo "make run   - run full Snakemake workflow"
 	@echo "make dry   - dry run to show planned steps"
-	@echo "make test  - quick sanity check"
+	@echo "make test  - install Python requirements and run smoke checks"
+	@echo "make smoke - run checks without installing packages"
 	@echo "make clean - remove work and results"
 
 env:
@@ -24,8 +26,13 @@ dry:
 	snakemake -s workflow/Snakefile -n -c $(THREADS)
 
 test:
-	python -m pip install -r env/requirements.txt
-	python analysis/scripts/example_qc_plot.py --in data-example/example_counts.tsv --out results-example/example_plot.png
+	$(PYTHON) -m pip install -r env/requirements.txt
+	$(MAKE) smoke
+
+smoke:
+	$(PYTHON) -m py_compile analysis/scripts/*.py
+	$(PYTHON) tests/validate_example_inputs.py
+	$(PYTHON) analysis/scripts/example_qc_plot.py --in data-example/example_counts.tsv --out results-example/example_plot.png
 	@echo "Wrote results-example/example_plot.png"
 
 clean:

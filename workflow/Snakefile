@@ -1,12 +1,17 @@
 # CCHFV segmented analysis pipeline
 
-import yaml, os, json
-cfg = yaml.safe_load(open("config/config.yaml"))
+import os
+import json
 
-SAMPLES = [x.get("sample","CCHF_2022_ISB_01") for x in cfg.get("pairs", [{"sample":"CCHF_2022_ISB_01","r1":"data-private/CCHF_2022_ISB_01_R1.fastq.gz","r2":"data-private/CCHF_2022_ISB_01_R2.fastq.gz"}])]
-META = {x.get("sample","CCHF_2022_ISB_01"): x for x in cfg.get("pairs", [])}
-if not META:
-    META = {"CCHF_2022_ISB_01": {"r1":"data-private/CCHF_2022_ISB_01_R1.fastq.gz","r2":"data-private/CCHF_2022_ISB_01_R2.fastq.gz"}}
+configfile: os.environ.get("CCHFV_CONFIG", "config/config.yaml")
+
+cfg = config
+pairs = cfg.get("pairs", [])
+if not pairs:
+    raise ValueError("config/config.yaml must define at least one paired FASTQ sample under 'pairs'.")
+
+SAMPLES = [x["sample"] for x in pairs]
+META = {x["sample"]: x for x in pairs}
 
 THREADS = 4
 MINLEN =   cfg.get("discovery",{}).get("min_len_contig", 300)
@@ -22,17 +27,19 @@ rule all:
     input:
         expand("results/iqtree/{seg}.treefile", seg=["S","M","L"]),
         expand("results/consensus/{s}.{seg}.fa", s=SAMPLES, seg=["S","M","L"]),
-        expand("results/reports/{s}_segment_report.txt", s=SAMPLES)
+        expand("results/reports/{s}_segment_report.txt", s=SAMPLES),
+        expand("results/reports/{s}_reassortment_status.txt", s=SAMPLES)
 
 rule fastqc:
     input:
         r1=lambda w: META[w.s]["r1"],
         r2=lambda w: META[w.s]["r2"]
     output:
-        "work/{s}.R1.fastqc.html",
-        "work/{s}.R2.fastqc.html"
+        "work/{s}.fastqc.done"
     shell:
-        "fastqc -o work {input.r1} {input.r2}"
+        "mkdir -p work logs && "
+        "fastqc -o work {input.r1} {input.r2} > logs/{wildcards.s}.fastqc.log 2>&1 && "
+        "touch {output}"
 
 rule trim:
     input:
@@ -57,7 +64,7 @@ rule spades:
         contigs="results/spades/{s}/contigs.fasta"
     threads: 4
     shell:
-        "mkdir -p results/spades/{wildcards.s} && "
+        "mkdir -p logs results/spades/{wildcards.s} && "
         "spades.py -1 {input.r1} -2 {input.r2} -t {threads} -o results/spades/{wildcards.s} > logs/{wildcards.s}.spades.log 2>&1 && "
         "test -f results/spades/{wildcards.s}/contigs.fasta || touch {output.contigs}"
 
@@ -101,7 +108,8 @@ def selected_acc(wildcards, seg):
     for r in sel:
         if r and r[0] == seg and r[1]:
             return r[1]
-    return "NC_005300"  # harmless fallback
+    fallback = {"S": "NC_005302", "M": "NC_005301", "L": "NC_005300"}
+    return fallback[seg]
 
 rule fetch_ref_S:
     input:
@@ -162,42 +170,30 @@ rule consensus_seg:
         "bcftools mpileup -Ou -f {input.ref} {input.bam} | bcftools call -mv -Oz -o {output.vcf} && bcftools index {output.vcf} && "
         "bcftools consensus -f {input.ref} -m {output.mask} {output.vcf} > {output.cons}"
 
-rule context_from_blast_S:
+rule context_from_blast:
     input:
-        blast="results/blast/{s}.contig_top_hits.tsv"
+        blast=expand("results/blast/{s}.contig_top_hits.tsv", s=SAMPLES)
     output:
-        "results/context/S_context.fasta"
+        "results/context/{seg}_context.fasta"
     params:
         hits=CTX_HITS
+    wildcard_constraints:
+        seg="S|M|L"
     shell:
-        "mkdir -p results/context && python analysis/scripts/build_context_from_blast.py --blast {input.blast} --segment S --hits {params.hits} --out_fasta {output}"
+        "mkdir -p results/context && "
+        "python analysis/scripts/build_context_from_blast.py --blast {input.blast} --segment {wildcards.seg} --hits {params.hits} --out_fasta {output}"
 
-rule context_from_blast_M:
-    input:
-        blast="results/blast/{s}.contig_top_hits.tsv"
-    output:
-        "results/context/M_context.fasta"
-    params:
-        hits=CTX_HITS
-    shell:
-        "mkdir -p results/context && python analysis/scripts/build_context_from_blast.py --blast {input.blast} --segment M --hits {params.hits} --out_fasta {output}"
-
-rule context_from_blast_L:
-    input:
-        blast="results/blast/{s}.contig_top_hits.tsv"
-    output:
-        "results/context/L_context.fasta"
-    params:
-        hits=CTX_HITS
-    shell:
-        "mkdir -p results/context && python analysis/scripts/build_context_from_blast.py --blast {input.blast} --segment L --hits {params.hits} --out_fasta {output}"
+def consensus_for_segment(wildcards):
+    return expand("results/consensus/{s}.{seg}.fa", s=SAMPLES, seg=wildcards.seg)
 
 rule align_seg:
     input:
-        cons="results/consensus/{s}.{seg}.fa",
+        cons=consensus_for_segment,
         ctx="results/context/{seg}_context.fasta"
     output:
         "results/aln/{seg}_alignment.fasta"
+    wildcard_constraints:
+        seg="S|M|L"
     shell:
         "mkdir -p results/aln && cat {input.cons} {input.ctx} > results/aln/{wildcards.seg}_input.fasta && mafft --auto results/aln/{wildcards.seg}_input.fasta > {output}"
 
@@ -217,6 +213,8 @@ rule report_segments:
     input:
         js="results/segments/{s}_segment_calls.json"
     output:
-        "results/reports/{s}_segment_report.txt"
+        report="results/reports/{s}_segment_report.txt",
+        status="results/reports/{s}_reassortment_status.txt"
     shell:
-        "mkdir -p results/reports && python analysis/scripts/report_segments.py --segments_json {input.js} --out_txt {output}"
+        "mkdir -p results/reports && "
+        "python analysis/scripts/report_segments.py --segments_json {input.js} --out_txt {output.report} --out_status {output.status}"

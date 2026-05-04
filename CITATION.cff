@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: Please cite this code and the associated paper.
 title: CCHFV segmented analysis pipeline for Pakistan 2022 study
-version: 1.0.0
-date-released: 2025-09-28
+version: 1.0.1
+date-released: 2026-05-04
 authors:
   - family-names: Haider
     given-names: Syed Adnan

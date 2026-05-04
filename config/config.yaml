@@ -1,7 +1,7 @@
 pairs:
-  - sample: CCHF_2022_ISB_01
-    r1: data-private/CCHF_2022_ISB_01_R1.fastq.gz
-    r2: data-private/CCHF_2022_ISB_01_R2.fastq.gz
+  - sample: CCHFV_DEMO_01
+    r1: data-example/fastq/CCHFV_DEMO_01_R1.fastq
+    r2: data-example/fastq/CCHFV_DEMO_01_R2.fastq
 
 discovery:
   min_len_contig: 300

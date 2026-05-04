@@ -2,7 +2,7 @@
 import argparse, os, time
 from Bio import Entrez
 ap = argparse.ArgumentParser(description='Fetch top N subject accessions from BLAST for context tree')
-ap.add_argument('--blast', required=True)
+ap.add_argument('--blast', nargs='+', required=True)
 ap.add_argument('--segment', choices=['S','M','L'], required=True)
 ap.add_argument('--hits', type=int, default=25)
 ap.add_argument('--out_fasta', required=True)
@@ -19,17 +19,20 @@ if api_key:
     Entrez.api_key = api_key
 
 accs = []
-with open(a.blast) as f:
-    next(f)
-    for line in f:
-        parts = line.strip().split('\t')
-        title = parts[-1].lower()
-        if a.segment == 'S' and ('segment s' in title or 'small segment' in title):
-            accs.append(parts[1])
-        elif a.segment == 'M' and ('segment m' in title or 'medium segment' in title):
-            accs.append(parts[1])
-        elif a.segment == 'L' and ('segment l' in title or 'large segment' in title):
-            accs.append(parts[1])
+for blast_path in a.blast:
+    with open(blast_path) as f:
+        next(f, None)
+        for line in f:
+            parts = line.strip().split('\t')
+            if len(parts) < 2:
+                continue
+            title = parts[-1].lower()
+            if a.segment == 'S' and ('segment s' in title or 'small segment' in title):
+                accs.append(parts[1])
+            elif a.segment == 'M' and ('segment m' in title or 'medium segment' in title):
+                accs.append(parts[1])
+            elif a.segment == 'L' and ('segment l' in title or 'large segment' in title):
+                accs.append(parts[1])
 accs = list(dict.fromkeys(accs))[:a.hits]
 
 with open(a.out_fasta, 'w') as out:
