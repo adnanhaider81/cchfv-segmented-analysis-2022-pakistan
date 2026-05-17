@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: Please cite this code and the associated paper.
 title: CCHFV segmented analysis pipeline for Pakistan 2022 study
-version: 1.0.2
+version: 1.0.3
 date-released: 2026-05-17
 type: software
 abstract: "A reproducible segmented-virus analysis workflow for CCHFV Pakistan 2022 data, including synthetic demo inputs, metagenomic read QC, de novo contig discovery, BLAST-based segment classification, targeted segment consensus generation, phylogeny, and reassortment review."
@@ -9,7 +9,6 @@ authors:
   - family-names: Haider
     given-names: Syed Adnan
 repository-code: "https://github.com/adnanhaider81/cchfv-segmented-analysis-2022-pakistan"
-doi: "10.5281/zenodo.20257434"
 license: MIT
 preferred-citation:
   type: article
