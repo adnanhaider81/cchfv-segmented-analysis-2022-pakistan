@@ -1,5 +1,7 @@
 # Whole genome sequencing of Crimean Congo hemorrhagic fever virus circulating in Pakistan during 2022 - reproducible segmented analysis
 
+[![DOI](https://zenodo.org/badge/1066223286.svg)](https://zenodo.org/badge/latestdoi/1066223286)
+
 Reproducible pipeline that follows the study design and methods. It builds contigs, uses NCBI BLAST to identify the likely clade for each segment, performs targeted reference based assembly per segment, and infers phylogeny for S, M, and L. It also writes a reassortment status summary when segment clade calls differ.
 
 ## Portfolio quick view
@@ -29,7 +31,7 @@ flowchart LR
 | Data privacy note | Present; no patient data or restricted FASTQs are included |
 | GitHub Actions badge | Present |
 | Container recipe | Planned |
-| Zenodo DOI | Pending Zenodo archive for `v1.0.2` |
+| Zenodo DOI | [10.5281/zenodo.20257434](https://doi.org/10.5281/zenodo.20257434) |
 
 ## Program summary
 One Snakemake pipeline. Discovery first, then per segment targeted analysis.
@@ -153,6 +155,14 @@ context:
 
 ## Data policy
 The repository includes only synthetic demo inputs. Do not commit patient data, restricted FASTQs, generated BAM/VCF files, or run outputs.
+
+## Citation
+
+Please cite the archived Zenodo release when using this workflow:
+
+Haider, S. A. (2026). CCHFV segmented analysis pipeline for Pakistan 2022 study (v1.0.2). Zenodo. https://doi.org/10.5281/zenodo.20257434
+
+The all-version Zenodo concept DOI is https://doi.org/10.5281/zenodo.20257433.
 
 ## References
 - Umair M, Rehman Z, Haider SA, et al. Whole genome sequencing of Crimean Congo hemorrhagic fever virus circulating in Pakistan during 2022. Journal of Medical Virology. 2023. doi:10.1002/jmv.28604

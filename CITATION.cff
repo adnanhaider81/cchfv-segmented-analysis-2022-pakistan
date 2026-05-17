@@ -9,6 +9,7 @@ authors:
   - family-names: Haider
     given-names: Syed Adnan
 repository-code: "https://github.com/adnanhaider81/cchfv-segmented-analysis-2022-pakistan"
+doi: "10.5281/zenodo.20257434"
 license: MIT
 preferred-citation:
   type: article
