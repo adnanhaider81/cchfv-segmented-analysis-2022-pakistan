@@ -2,6 +2,35 @@
 
 Reproducible pipeline that follows the study design and methods. It builds contigs, uses NCBI BLAST to identify the likely clade for each segment, performs targeted reference based assembly per segment, and infers phylogeny for S, M, and L. It also writes a reassortment status summary when segment clade calls differ.
 
+## Portfolio quick view
+
+This repository shows a segmented-virus analysis workflow for CCHFV: metagenomic read QC, de novo contig discovery, BLAST-based segment classification, per-segment reference selection, consensus generation, phylogeny, and reassortment review. The default configuration uses synthetic demo inputs so the repository can be checked without restricted sequence data.
+
+```mermaid
+flowchart LR
+  A["Metagenomic FASTQ"] --> B["QC and trimming"]
+  B --> C["De novo assembly"]
+  C --> D["BLAST segment discovery"]
+  D --> E["S/M/L reference selection"]
+  E --> F["Segment consensus"]
+  F --> G["Segment phylogenies"]
+  G --> H["Reassortment summary"]
+```
+
+## Public repository checklist
+
+| Item | Status |
+| --- | --- |
+| README, license, citation metadata | Present |
+| Reproducible environment | `env/environment.yml` and `env/requirements.txt` |
+| Tests or smoke checks | `tests/` plus `make test` and `make dry` |
+| Example or synthetic data | `data-example/` |
+| Documentation | README and workflow/config comments |
+| Data privacy note | Present; no patient data or restricted FASTQs are included |
+| GitHub Actions badge | Present |
+| Container recipe | Planned |
+| Zenodo DOI | Planned for archived stable release |
+
 ## Program summary
 One Snakemake pipeline. Discovery first, then per segment targeted analysis.
 
