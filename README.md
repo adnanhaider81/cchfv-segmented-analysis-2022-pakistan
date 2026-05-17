@@ -149,7 +149,7 @@ The repository includes only synthetic demo inputs. Do not commit patient data, 
 
 Please cite the archived Zenodo release when using this workflow:
 
-Haider, S. A. (2026). CCHFV segmented analysis pipeline for Pakistan 2022 study (v1.0.3). Zenodo. https://doi.org/10.5281/zenodo.20257883
+Haider, S. A. (2026). CCHFV Segmented Genome Analysis, Pakistan 2022 (v1.0.3). Zenodo. https://doi.org/10.5281/zenodo.20257883
 
 The all-version Zenodo concept DOI is https://doi.org/10.5281/zenodo.20257433.
 
