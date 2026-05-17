@@ -1,6 +1,7 @@
 # Whole genome sequencing of Crimean Congo hemorrhagic fever virus circulating in Pakistan during 2022 - reproducible segmented analysis
 
 [![DOI](https://zenodo.org/badge/1066223286.svg)](https://zenodo.org/badge/latestdoi/1066223286)
+[![Smoke test](https://github.com/adnanhaider81/cchfv-segmented-analysis-2022-pakistan/actions/workflows/smoke-test.yml/badge.svg)](https://github.com/adnanhaider81/cchfv-segmented-analysis-2022-pakistan/actions/workflows/smoke-test.yml)
 
 Reproducible pipeline that follows the study design and methods. It builds contigs, uses NCBI BLAST to identify the likely clade for each segment, performs targeted reference based assembly per segment, and infers phylogeny for S, M, and L. It also writes a reassortment status summary when segment clade calls differ.
 
@@ -30,7 +31,7 @@ flowchart LR
 | Documentation | README and workflow/config comments |
 | Data privacy note | Present; no patient data or restricted FASTQs are included |
 | GitHub Actions badge | Present |
-| Container recipe | Planned |
+| Container recipe | `Dockerfile` |
 | Zenodo DOI | [10.5281/zenodo.20257434](https://doi.org/10.5281/zenodo.20257434) |
 
 ## Program summary
