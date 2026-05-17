@@ -29,7 +29,7 @@ flowchart LR
 | Data privacy note | Present; no patient data or restricted FASTQs are included |
 | GitHub Actions badge | Present |
 | Container recipe | Planned |
-| Zenodo DOI | Planned for archived stable release |
+| Zenodo DOI | Pending Zenodo archive for `v1.0.2` |
 
 ## Program summary
 One Snakemake pipeline. Discovery first, then per segment targeted analysis.
