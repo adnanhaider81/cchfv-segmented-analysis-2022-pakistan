@@ -32,7 +32,7 @@ flowchart LR
 | Data privacy note | Present; no patient data or restricted FASTQs are included |
 | GitHub Actions badge | Present |
 | Container recipe | `Dockerfile` |
-| Zenodo DOI | Pending Zenodo archive for `v1.0.3` |
+| Zenodo DOI | [10.5281/zenodo.20257883](https://doi.org/10.5281/zenodo.20257883) |
 
 ## Program summary
 One Snakemake pipeline. Discovery first, then per segment targeted analysis.
@@ -161,7 +161,7 @@ The repository includes only synthetic demo inputs. Do not commit patient data, 
 
 Please cite the archived Zenodo release when using this workflow:
 
-Haider, S. A. (2026). CCHFV segmented analysis pipeline for Pakistan 2022 study (v1.0.3). Zenodo release DOI pending.
+Haider, S. A. (2026). CCHFV segmented analysis pipeline for Pakistan 2022 study (v1.0.3). Zenodo. https://doi.org/10.5281/zenodo.20257883
 
 The all-version Zenodo concept DOI is https://doi.org/10.5281/zenodo.20257433.
 
