@@ -145,6 +145,10 @@ context:
 ## Data policy
 The repository includes only synthetic demo inputs. Do not commit patient data, restricted FASTQs, generated BAM/VCF files, or run outputs.
 
+## Data governance
+
+See [DATA_GOVERNANCE.md](DATA_GOVERNANCE.md) for public-data, restricted-data, and sample-identifier handling rules.
+
 ## Citation
 
 Please cite the archived Zenodo release when using this workflow:
